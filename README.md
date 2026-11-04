@@ -128,7 +128,7 @@ crontab -e
         "oss:PutCname",
         "oss:ListCname"
       ],
-      "Resource": "acs:oss:*:*:4ading/*"
+      "Resource": "acs:oss:*:*:<bucket>/*"
     },
     {
       "Effect": "Allow",
@@ -142,6 +142,12 @@ crontab -e
   ]
 }
 ```
+
+操作步骤：
+
+1. 创建 RAM 子账号，记住 AK/SK。
+2. 在 RAM 访问控制中，点击“权限管理” > “权限策略”，点“创建权限策略”，点“脚本编辑”，输入上面的 JSON 脚本，保存。
+3. 给 RAM 子账号授权，选择创建的权限策略。
 
 说明：
 
@@ -165,7 +171,7 @@ journalctl -u oss-cert-sync.service -f      # 查看运行日志
 
 凭据写进 `/etc/oss-cert-sync/env`（`chmod 600`，owner 与 service 的 `User` 一致）：
 
-```
+```bash
 OSS_ACCESS_KEY_ID=LTAI...
 OSS_ACCESS_KEY_SECRET=...
 ```
@@ -173,6 +179,12 @@ OSS_ACCESS_KEY_SECRET=...
 **方式二：crontab（无 root）**：见快速开始第 8 步，错开分钟避免整点拥堵。
 
 Caddy 续期窗口是到期的 2/3 处（约每 60 天一次），15 分钟一轮的轮询足够及时；重复运行几乎零成本（哈希相同直接跳过）。
+
+示例：
+
+```cron
+7,22,37,52 * * * * . /path/to/cert-uploader/env && cd /path/to/cert-uploader && ./bin/cert-uploader sync --config config.toml >> sync.log 2>&1
+```
 
 ## CLI 参考
 
