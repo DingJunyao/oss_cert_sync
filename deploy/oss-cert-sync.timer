@@ -1,5 +1,5 @@
 [Unit]
-Description=Run cert-uploader periodically
+Description=Run oss-cert-sync periodically
 
 [Timer]
 OnBootSec=2min

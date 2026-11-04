@@ -3,7 +3,7 @@ requires = ["setuptools>=61"]
 build-backend = "setuptools.build_meta"
 
 [project]
-name = "cert-uploader"
+name = "oss-cert-sync"
 version = "0.1.0"
 description = "Push Caddy-managed TLS certificates to Aliyun OSS custom CNAME domains"
 readme = "README.md"
@@ -15,7 +15,7 @@ dependencies = [
 ]
 
 [project.scripts]
-cert-uploader = "cert_uploader.cli:main"
+oss-cert-sync = "oss_cert_sync.cli:main"
 
 [tool.setuptools]
-packages = ["cert_uploader"]
+packages = ["oss_cert_sync"]

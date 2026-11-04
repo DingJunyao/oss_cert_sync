@@ -9,6 +9,6 @@ Type=oneshot
 #User=ecs-user
 #Group=ecs-user
 # Credentials for OSS (chmod 600 this file, owner = the User above):
-EnvironmentFile=-/etc/cert-uploader/env
-ExecStart=/opt/cert-uploader/bin/cert-uploader sync --config /etc/cert-uploader/config.toml
+EnvironmentFile=-/etc/oss-cert-sync/env
+ExecStart=/opt/oss-cert-sync/bin/oss-cert-sync sync --config /etc/oss-cert-sync/config.toml
 # State/lock default next to the config; keep them writable by User.

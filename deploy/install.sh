@@ -1,14 +1,14 @@
 #!/usr/bin/env bash
-# Install cert-uploader on the server (root not required).
+# Install oss-cert-sync on the server (root not required).
 #
 #   ./deploy/install.sh [--app-dir DIR] [--config-dir DIR] [--no-systemd]
 #
-# Defaults: app -> /opt/cert-uploader, config -> /etc/cert-uploader.
+# Defaults: app -> /opt/oss-cert-sync, config -> /etc/oss-cert-sync.
 # Without root (or with --no-systemd) it prints a crontab line instead.
 set -euo pipefail
 
-APP_DIR="/opt/cert-uploader"
-CONFIG_DIR="/etc/cert-uploader"
+APP_DIR="/opt/oss-cert-sync"
+CONFIG_DIR="/etc/oss-cert-sync"
 NO_SYSTEMD=0
 
 while [ $# -gt 0 ]; do
@@ -30,7 +30,7 @@ tar -C "$SRC_DIR" \
   --exclude=./vendor --exclude=./.venv --exclude=./.git \
   --exclude='./state.json*' --exclude='__pycache__' --exclude='./config.toml' \
   -cf - . | tar -C "$APP_DIR" -xf -
-chmod +x "$APP_DIR/bin/cert-uploader"
+chmod +x "$APP_DIR/bin/oss-cert-sync"
 
 echo "[2/5] installing Python dependencies"
 if python3 -m venv "$APP_DIR/.venv" 2>/dev/null; then
@@ -58,21 +58,21 @@ else
 fi
 
 echo "[4/5] self check"
-"$APP_DIR/bin/cert-uploader" --config "$CONFIG_DIR/config.toml" doctor || true
+"$APP_DIR/bin/oss-cert-sync" --config "$CONFIG_DIR/config.toml" doctor || true
 
 echo "[5/5] scheduling"
 if [ "$(id -u)" = "0" ] && [ "$NO_SYSTEMD" = "0" ] && command -v systemctl >/dev/null 2>&1; then
-  install -m 644 "$APP_DIR/deploy/cert-uploader.service" /etc/systemd/system/
-  install -m 644 "$APP_DIR/deploy/cert-uploader.timer" /etc/systemd/system/
+  install -m 644 "$APP_DIR/deploy/oss-cert-sync.service" /etc/systemd/system/
+  install -m 644 "$APP_DIR/deploy/oss-cert-sync.timer" /etc/systemd/system/
   systemctl daemon-reload
-  systemctl enable --now cert-uploader.timer
-  echo "  systemd timer installed: systemctl status cert-uploader.timer"
+  systemctl enable --now oss-cert-sync.timer
+  echo "  systemd timer installed: systemctl status oss-cert-sync.timer"
 else
   echo "  add this line to crontab (crontab -e):"
-  echo "  7,22,37,52 * * * * $APP_DIR/bin/cert-uploader sync --config $CONFIG_DIR/config.toml >> $APP_DIR/sync.log 2>&1"
+  echo "  7,22,37,52 * * * * $APP_DIR/bin/oss-cert-sync sync --config $CONFIG_DIR/config.toml >> $APP_DIR/sync.log 2>&1"
 fi
 
 echo "done. next steps:"
 echo "  1. edit $CONFIG_DIR/config.toml"
 echo "  2. export OSS_ACCESS_KEY_ID / OSS_ACCESS_KEY_SECRET (or an env file for systemd)"
-echo "  3. $APP_DIR/bin/cert-uploader --config $CONFIG_DIR/config.toml sync --dry-run"
+echo "  3. $APP_DIR/bin/oss-cert-sync --config $CONFIG_DIR/config.toml sync --dry-run"

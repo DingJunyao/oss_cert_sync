@@ -14,7 +14,7 @@ from .config import ConfigError, Settings, TargetConfig, default_config_path, lo
 from .certsource import CertCandidate
 from .ossclient import OssClient, has_credentials
 
-log = logging.getLogger("cert_uploader")
+log = logging.getLogger("oss_cert_sync")
 
 EXIT_OK = 0
 EXIT_ERROR = 1
@@ -311,11 +311,11 @@ def cmd_doctor(args: argparse.Namespace) -> int:
 
 def build_parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(
-        prog="cert-uploader",
+        prog="oss-cert-sync",
         description="Push Caddy-managed TLS certificates to Aliyun OSS CNAME domains",
     )
     parser.add_argument(
-        "--version", action="version", version=f"cert-uploader {__version__}"
+        "--version", action="version", version=f"oss-cert-sync {__version__}"
     )
     parser.add_argument("-q", "--quiet", action="store_true", help="only log errors")
 
@@ -326,7 +326,7 @@ def build_parser() -> argparse.ArgumentParser:
             "--config",
             type=Path,
             default=None,
-            help="config file path (default: CERT_UPLOADER_CONFIG, then auto-discovery)",
+            help="config file path (default: OSS_CERT_SYNC_CONFIG, then auto-discovery)",
         )
 
     p_sync = sub.add_parser(

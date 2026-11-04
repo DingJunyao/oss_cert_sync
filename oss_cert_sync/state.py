@@ -23,7 +23,7 @@ def exclusive_lock(path: Path) -> Iterator[None]:
         try:
             fcntl.flock(fd, fcntl.LOCK_EX | fcntl.LOCK_NB)
         except BlockingIOError as exc:
-            raise LockHeld(f"another cert-uploader run holds {path}") from exc
+            raise LockHeld(f"another oss-cert-sync run holds {path}") from exc
         yield
     finally:
         try:

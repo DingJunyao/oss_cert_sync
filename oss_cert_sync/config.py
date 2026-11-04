@@ -71,19 +71,19 @@ class Settings:
 
 
 def default_config_path() -> Path:
-    env = os.environ.get("CERT_UPLOADER_CONFIG")
+    env = os.environ.get("OSS_CERT_SYNC_CONFIG")
     if env:
         return Path(env)
     candidates = [
         Path("config.toml"),
-        Path("/etc/cert-uploader/config.toml"),
-        Path.home() / ".config" / "cert-uploader" / "config.toml",
+        Path("/etc/oss-cert-sync/config.toml"),
+        Path.home() / ".config" / "oss-cert-sync" / "config.toml",
     ]
     for candidate in candidates:
         if candidate.is_file():
             return candidate
     raise ConfigError(
-        "no config file found; pass --config or set CERT_UPLOADER_CONFIG "
+        "no config file found; pass --config or set OSS_CERT_SYNC_CONFIG "
         "(looked in: " + ", ".join(str(c) for c in candidates) + ")"
     )
 

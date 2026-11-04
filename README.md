@@ -1,4 +1,4 @@
-# cert-uploader
+# oss-cert-sync
 
 把 Caddy 自动续期管理的 TLS 证书，自动同步（上传）到阿里云 OSS 自定义域名（CNAME 绑定），让 OSS 托管的静态域名（例如图片域名）始终使用最新证书，支持 HTTPS 访问，再也不用手动去阿里云控制台申请、下载、上传证书。
 
@@ -12,11 +12,11 @@
 
 典型场景：图片等静态资源放在阿里云 OSS，绑定自定义域名（如 `static.example.com`）。OSS 上的 HTTPS 证书要在阿里云控制台手动申请，每隔几个月到期一次，人工续期既麻烦又容易忘记（证书一过期，所有引用该域名的图片全部加载失败）。
 
-而服务器上的 Caddy 已经用 DNS-01 验证签发了通配符证书（如 `*.a4ding.com`），完全可以覆盖这个域名。cert-uploader 把"Caddy 里的新证书"自动推送到 OSS，形成闭环：**Caddy 续期 → 哈希变化 → 定时任务发现 → 上传 OSS → 线上证书更新**。
+而服务器上的 Caddy 已经用 DNS-01 验证签发了通配符证书（如 `*.a4ding.com`），完全可以覆盖这个域名。oss-cert-sync 把"Caddy 里的新证书"自动推送到 OSS，形成闭环：**Caddy 续期 → 哈希变化 → 定时任务发现 → 上传 OSS → 线上证书更新**。
 
 ## 工作原理
 
-`cert-uploader sync` 每次运行时：
+`oss-cert-sync sync` 每次运行时：
 
 1. **发现证书**：通过 `docker exec`（或直接读文件）枚举 Caddy 存储目录 `certificates/<颁发机构>/<证书名>/` 下的所有证书；
 2. **匹配目标**：解析每张证书的 SAN，按 "精确匹配 > 通配符匹配" 打分，多张可覆盖时取有效期最长（最新续期）的那张；
@@ -29,9 +29,9 @@
 ## 目录结构
 
 ```
-cert_uploader/
-├── bin/cert-uploader          # 启动器（优先 .venv，否则 vendor/）
-├── cert_uploader/             # Python 包
+oss_cert_sync/
+├── bin/oss-cert-sync          # 启动器（优先 .venv，否则 vendor/）
+├── oss_cert_sync/             # Python 包
 │   ├── certs.py               # 证书解析/匹配/指纹
 │   ├── certsource.py          # 证书来源（docker exec / 本地目录 / 指定文件）
 │   ├── config.py              # TOML 配置
@@ -42,8 +42,8 @@ cert_uploader/
 │   └── __init__.py
 ├── deploy/
 │   ├── install.sh             # 服务器安装脚本
-│   ├── cert-uploader.service  # systemd 服务
-│   └── cert-uploader.timer    # systemd 定时器（每 15 分钟）
+│   ├── oss-cert-sync.service  # systemd 服务
+│   └── oss-cert-sync.timer    # systemd 定时器（每 15 分钟）
 ├── config.example.toml        # 配置样例
 ├── pyproject.toml
 └── README.md
@@ -55,13 +55,13 @@ cert_uploader/
 
 ```bash
 # 1. 上传项目到服务器（本机执行）
-scp -r cert_uploader/ 4ading:/home/ecs-user/cert-uploader
+scp -r oss_cert_sync/ 4ading:/home/ecs-user/oss-cert-sync
 ssh 4ading
 
 # 2. 安装依赖（Debian 12 无 python3-venv 时用 --target）
-cd ~/cert-uploader
+cd ~/oss-cert-sync
 pip3 install --target vendor -i https://mirrors.aliyun.com/pypi/simple/ 'oss2>=2.18,<3' 'cryptography>=41'
-# 或：./deploy/install.sh --app-dir ~/cert-uploader --config-dir ~/cert-uploader/config
+# 或：./deploy/install.sh --app-dir ~/oss-cert-sync --config-dir ~/oss-cert-sync/config
 
 # 3. 写配置
 cp config.example.toml config.toml && chmod 600 config.toml
@@ -72,25 +72,25 @@ export OSS_ACCESS_KEY_ID=LTAI你的AK
 export OSS_ACCESS_KEY_SECRET=你的SK
 
 # 5. 体检
-python3 -m cert_uploader doctor --config config.toml
+python3 -m oss_cert_sync doctor --config config.toml
 
 # 6. 试运行（不真正上传）
-python3 -m cert_uploader sync --config config.toml --dry-run
+python3 -m oss_cert_sync sync --config config.toml --dry-run
 
 # 7. 正式上传
-python3 -m cert_uploader sync --config config.toml
+python3 -m oss_cert_sync sync --config config.toml
 
 # 8. 定时任务（每 15 分钟）
 crontab -e
-# 7,22,37,52 * * * * /home/ecs-user/cert-uploader/bin/cert-uploader sync --config /home/ecs-user/cert-uploader/config.toml >> /home/ecs-user/cert-uploader/sync.log 2>&1
+# 7,22,37,52 * * * * /home/ecs-user/oss-cert-sync/bin/oss-cert-sync sync --config /home/ecs-user/oss-cert-sync/config.toml >> /home/ecs-user/oss-cert-sync/sync.log 2>&1
 ```
 
 也可以直接跑安装脚本（root 时自动装 systemd timer，普通用户打印 crontab 行）：
 
 ```bash
-./deploy/install.sh                       # 默认 /opt/cert-uploader + /etc/cert-uploader
+./deploy/install.sh                       # 默认 /opt/oss-cert-sync + /etc/oss-cert-sync
 ./deploy/install.sh --no-systemd          # 不动 systemd
-./deploy/install.sh --app-dir ~/apps/cert-uploader --config-dir ~/conf
+./deploy/install.sh --app-dir ~/apps/oss-cert-sync --config-dir ~/conf
 ```
 
 ## 配置说明
@@ -156,14 +156,14 @@ crontab -e
 **方式一：systemd timer（推荐，root 安装）**，`deploy/install.sh` 自动完成，或手动：
 
 ```bash
-install -m 644 deploy/cert-uploader.service /etc/systemd/system/
-install -m 644 deploy/cert-uploader.timer /etc/systemd/system/
-systemctl daemon-reload && systemctl enable --now cert-uploader.timer
-systemctl list-timers cert-uploader.timer
-journalctl -u cert-uploader.service -f      # 查看运行日志
+install -m 644 deploy/oss-cert-sync.service /etc/systemd/system/
+install -m 644 deploy/oss-cert-sync.timer /etc/systemd/system/
+systemctl daemon-reload && systemctl enable --now oss-cert-sync.timer
+systemctl list-timers oss-cert-sync.timer
+journalctl -u oss-cert-sync.service -f      # 查看运行日志
 ```
 
-凭据写进 `/etc/cert-uploader/env`（`chmod 600`，owner 与 service 的 `User` 一致）：
+凭据写进 `/etc/oss-cert-sync/env`（`chmod 600`，owner 与 service 的 `User` 一致）：
 
 ```
 OSS_ACCESS_KEY_ID=LTAI...
@@ -178,10 +178,10 @@ Caddy 续期窗口是到期的 2/3 处（约每 60 天一次），15 分钟一�
 
 | 命令 | 作用 |
 | --- | --- |
-| `cert-uploader sync [--dry-run] [--force] [--no-verify] [--target DOMAIN]` | 同步证书；`--dry-run` 只看不上传；`--force` 忽略去重；`--target` 只处理指定域名（可多次） |
-| `cert-uploader status` | 本地证书、状态文件、OSS 侧绑定与证书信息一览 |
-| `cert-uploader doctor` | 体检：依赖、证书源、各 target 证书、OSS 凭据/权限、DNS |
-| 通用：`--config PATH` | 指定配置（默认依次找 `CERT_UPLOADER_CONFIG` 环境变量、`./config.toml`、`/etc/cert-uploader/config.toml`、`~/.config/cert-uploader/config.toml`） |
+| `oss-cert-sync sync [--dry-run] [--force] [--no-verify] [--target DOMAIN]` | 同步证书；`--dry-run` 只看不上传；`--force` 忽略去重；`--target` 只处理指定域名（可多次） |
+| `oss-cert-sync status` | 本地证书、状态文件、OSS 侧绑定与证书信息一览 |
+| `oss-cert-sync doctor` | 体检：依赖、证书源、各 target 证书、OSS 凭据/权限、DNS |
+| 通用：`--config PATH` | 指定配置（默认依次找 `OSS_CERT_SYNC_CONFIG` 环境变量、`./config.toml`、`/etc/oss-cert-sync/config.toml`、`~/.config/oss-cert-sync/config.toml`） |
 | 通用：`-q` | 只输出错误 |
 
 退出码：`0` 成功；`1` 一般错误（网络/OSS API 等）；`2` 配置错误；`3` 证书错误（不匹配/过期/不覆盖域名/找不到）。cron/监控可按退出码告警。
@@ -190,7 +190,7 @@ Caddy 续期窗口是到期的 2/3 处（约每 60 天一次），15 分钟一�
 
 ```bash
 # 命令行看
-python3 -m cert_uploader status
+python3 -m oss_cert_sync status
 
 # 线上验证（上传后 OSS 证书生效通常即时，个别情况几分钟）
 curl -vI https://static.a4ding.com/

@@ -5,8 +5,8 @@ set -euo pipefail
 HERE=$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")/.." && pwd)
 
 if [ -x "$HERE/.venv/bin/python" ]; then
-  exec "$HERE/.venv/bin/python" -m cert_uploader "$@"
+  exec "$HERE/.venv/bin/python" -m oss_cert_sync "$@"
 fi
 
 export PYTHONPATH="$HERE/vendor${PYTHONPATH:+:$PYTHONPATH}"
-exec python3 -m cert_uploader "$@"
+exec python3 -m oss_cert_sync "$@"
