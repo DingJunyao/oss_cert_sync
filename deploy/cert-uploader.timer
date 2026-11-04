@@ -1,0 +1,11 @@
+[Unit]
+Description=Run cert-uploader periodically
+
+[Timer]
+OnBootSec=2min
+OnUnitActiveSec=15min
+RandomizedDelaySec=45
+Persistent=true
+
+[Install]
+WantedBy=timers.target

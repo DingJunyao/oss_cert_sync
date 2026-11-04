@@ -1,0 +1,18 @@
+# runtime state and secrets - never commit
+state.json*
+config.toml
+env
+
+# installed dependencies
+vendor/
+.venv/
+
+# python noise
+__pycache__/
+*.pyc
+*.egg-info/
+build/
+dist/
+
+# logs
+*.log

@@ -1,0 +1,46 @@
+# cert-uploader configuration example.
+# Copy to /etc/cert-uploader/config.toml (or next to the project) and edit.
+
+[source]
+# Only Caddy-style storage layouts are supported for automatic discovery.
+type = "caddy"
+# "docker" = read through 'docker exec' (works for users in the docker group, no root)
+# "local"  = read the storage directory directly (host Caddy or root access)
+access = "docker"
+container = "caddy-entry"
+# Caddy data volume path *inside* the container (default docker storage).
+storage = "/data/caddy"
+
+[aliyun]
+# Bucket region, required.
+region = "cn-shanghai"
+# Optional explicit endpoint; default is https://oss-<region>.aliyuncs.com
+#endpoint = "https://oss-cn-shanghai.aliyuncs.com"
+
+# Recommended: keep credentials OUT of this file and export them instead:
+#   export OSS_ACCESS_KEY_ID=LTAI...
+#   export OSS_ACCESS_KEY_SECRET=...
+# (a systemd unit can read them from an EnvironmentFile=/etc/cert-uploader/env)
+# Alternatively uncomment and set here; VAR references are expanded from the
+# environment, e.g. access_key_id = "${OSS_ACCESS_KEY_ID}".
+#access_key_id = ""
+#access_key_secret = ""
+
+# One [[target]] per custom domain bound to a bucket.
+[[target]]
+domain = "static.a4ding.com"
+bucket = "4ading"
+#endpoint = ""        # override the aliyun endpoint for this bucket only
+
+# Alternative source for non-Caddy setups: explicit PEM files for this target.
+# When set, the global [source] is not used for this target.
+#cert_file = "/path/to/fullchain.pem"
+#key_file = "/path/to/privkey.pem"
+
+# State file (change-detection digests live here).
+#state_file = "/var/lib/cert-uploader/state.json"
+
+# Retries for the OSS upload API call.
+upload_attempts = 3
+
+log_level = "info"

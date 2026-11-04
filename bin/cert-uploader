@@ -1,0 +1,12 @@
+#!/usr/bin/env bash
+# Launcher: prefers an installed venv, falls back to ./vendor (pip --target).
+set -euo pipefail
+
+HERE=$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")/.." && pwd)
+
+if [ -x "$HERE/.venv/bin/python" ]; then
+  exec "$HERE/.venv/bin/python" -m cert_uploader "$@"
+fi
+
+export PYTHONPATH="$HERE/vendor${PYTHONPATH:+:$PYTHONPATH}"
+exec python3 -m cert_uploader "$@"
